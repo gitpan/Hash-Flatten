@@ -1,0 +1,9 @@
+Changes
+COPYING
+Makefile.PL
+MANIFEST
+MANIFEST.SKIP
+README
+lib/Hash/Flatten.pm
+t/hash_flatten.t
+t/data.lib
