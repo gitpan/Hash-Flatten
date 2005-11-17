@@ -2,7 +2,7 @@
 # Purpose : Flatten/Unflatten nested data structures to/from key-value form
 # Author  : John Alden
 # Created : Feb 2002
-# CVS     : $Id: Flatten.pm,v 1.13 2005/01/14 11:58:38 colinr Exp $
+# CVS     : $Id: Flatten.pm,v 1.15 2005/10/27 09:37:25 johna Exp $
 ###############################################################################
 
 package Hash::Flatten;
@@ -15,10 +15,15 @@ use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS $VERSION);
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(flatten unflatten);
 %EXPORT_TAGS = ('all' => \@EXPORT_OK);
-$VERSION = ('$Revision: 1.13 $' =~ /([\d\.]+)/)[0];
+$VERSION = ('$Revision: 1.15 $' =~ /([\d\.]+)/)[0];
 
 use constant DEFAULT_HASH_DELIM => '.';
 use constant DEFAULT_ARRAY_DELIM => ':';
+
+#Check if we need to support overloaded stringification
+use constant HAVE_OVERLOAD => eval {
+	require overload;
+};
 
 sub new
 {
@@ -168,7 +173,7 @@ sub _follow_refs
 	my ($self, $rscalar) = @_;
 	while (UNIVERSAL::isa($rscalar, 'REF'))
 	{
-		if ($self->{RECURSE_CHECK}{$rscalar}++)
+		if ($self->{RECURSE_CHECK}{_stringify_ref($rscalar)}++)
 		{
 			die "Recursive data structure detected. Cannot flatten recursive structures.";
 		}
@@ -194,7 +199,7 @@ sub _flatten_hash_level
 	my ($self, $hashref, $delim, $prefix) = @_;
 	TRACE("_flatten_hash_level called");
 	
-	if ($self->{RECURSE_CHECK}{$hashref}++)
+	if ($self->{RECURSE_CHECK}{_stringify_ref($hashref)}++)
 	{
 		die "Recursive data structure detected at this point in the structure: '$prefix'. Cannot flatten recursive structures.";
 	}
@@ -215,7 +220,7 @@ sub _flatten_array_level
 {
 	my ($self, $arrayref, $delim, $prefix) = @_;
 
-	if ($self->{RECURSE_CHECK}{$arrayref}++)
+	if ($self->{RECURSE_CHECK}{_stringify_ref($arrayref)}++)
 	{
 		die "Recursive data structure detected at this point in the structure: '$prefix'. Cannot flatten recursive structures.";
 	}
@@ -288,6 +293,13 @@ sub _unescape
 	$string =~ s/\Q$eseq$eseq\E/$eseq/gs;
 
 	return $string;
+}
+
+sub _stringify_ref {
+	my $ref = shift;
+	return unless ref($ref); #Undef if not a reference
+	return overload::StrVal($ref) if(HAVE_OVERLOAD && overload::Overloaded($ref));
+	return $ref.''; #Force type conversion here
 }
 
 #Log::Trace stubs
@@ -447,7 +459,7 @@ This also provides a tie interface but reduces a nested structure to key-value f
 
 =head1 VERSION
 
-$Id: Flatten.pm,v 1.13 2005/01/14 11:58:38 colinr Exp $
+$Id: Flatten.pm,v 1.15 2005/10/27 09:37:25 johna Exp $
 
 =head1 AUTHOR
 
