@@ -4,7 +4,7 @@
 # Purpose : Unit test for Hash::Flatten with overload
 # Author  : John Alden based on a bug report from Marcel Grünauer
 # Created : Oct 2005
-# CVS     : $Header: /home/cvs/software/cvsroot/hash_flatten/t/overload.t,v 1.2 2005/11/07 16:59:36 johna Exp $
+# CVS     : $Header: /home/cvs/software/cvsroot/hash_flatten/t/overload.t,v 1.3 2006/04/11 13:43:30 mattheww Exp $
 ###############################################################################
 # -t : trace
 # -T : deep trace into modules
@@ -21,7 +21,7 @@ getopts("tT");
 plan tests;
 
 #Compile the code
-chdir($1) if($0 =~ /(.*)\/(.*)/);
+chdir($1) if($0 =~ /(.*)(\/|\\)(.*)/);
 unshift @INC, "./lib", "../lib";
 require Hash::Flatten;
 

@@ -4,7 +4,7 @@
 # Purpose : Unit test for Hash::Flatten
 # Author  : John Alden
 # Created : Feb 2002
-# CVS     : $Header: /home/cvs/software/cvsroot/hash_flatten/t/hash_flatten.t,v 1.17 2005/01/20 11:02:16 piersk Exp $
+# CVS     : $Header: /home/cvs/software/cvsroot/hash_flatten/t/hash_flatten.t,v 1.19 2006/04/11 13:43:30 mattheww Exp $
 ###############################################################################
 # -t : trace
 # -T : deep trace into modules
@@ -21,7 +21,7 @@ getopts("tT");
 plan tests;
 
 #Compile the code
-chdir($1) if($0 =~ /(.*)\/(.*)/);
+chdir($1) if($0 =~ /(.*)(\/|\\)(.*)/);
 unshift @INC, "./lib", "../lib";
 
 #Override warn() first, then compile
@@ -429,3 +429,8 @@ ASSERT(scalar $buf =~ /is a REF and will be followed/ && EQUAL($rv, {
 	'a:0' => 1,
 	'a:1' => 2
 }), "warn mode works as expected");
+
+# check to ensure passing an undefined escape sequence doesn't die!
+my $escape_seq;
+my $o = Hash::Flatten->new({EscapeSequence => $escape_seq});
+ASSERT($o,"setting an undefined escape sequence didn't cause an error.");

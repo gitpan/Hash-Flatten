@@ -2,7 +2,7 @@
 # Purpose : Flatten/Unflatten nested data structures to/from key-value form
 # Author  : John Alden
 # Created : Feb 2002
-# CVS     : $Id: Flatten.pm,v 1.15 2005/10/27 09:37:25 johna Exp $
+# CVS     : $Id: Flatten.pm,v 1.16 2006/04/10 08:47:03 mattheww Exp $
 ###############################################################################
 
 package Hash::Flatten;
@@ -15,7 +15,7 @@ use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS $VERSION);
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(flatten unflatten);
 %EXPORT_TAGS = ('all' => \@EXPORT_OK);
-$VERSION = ('$Revision: 1.15 $' =~ /([\d\.]+)/)[0];
+$VERSION = ('$Revision: 1.16 $' =~ /([\d\.]+)/)[0];
 
 use constant DEFAULT_HASH_DELIM => '.';
 use constant DEFAULT_ARRAY_DELIM => ':';
@@ -36,7 +36,7 @@ sub new
 	#Defaults
 	$self->{HashDelimiter} ||= DEFAULT_HASH_DELIM;
 	$self->{ArrayDelimiter} ||= DEFAULT_ARRAY_DELIM;
-	$self->{EscapeSequence} = "\\" unless(exists $self->{EscapeSequence});
+	$self->{EscapeSequence} = "\\" unless(defined $self->{EscapeSequence} && length($self->{EscapeSequence}) > 0);
 	
 	#Sanity check: delimiters don't contain escape sequence
 	croak("Hash delimiter cannot contain escape sequence") if($self->{HashDelimiter} =~ /\Q$self->{EscapeSequence}\E/);
@@ -459,7 +459,7 @@ This also provides a tie interface but reduces a nested structure to key-value f
 
 =head1 VERSION
 
-$Id: Flatten.pm,v 1.15 2005/10/27 09:37:25 johna Exp $
+$Id: Flatten.pm,v 1.16 2006/04/10 08:47:03 mattheww Exp $
 
 =head1 AUTHOR
 
