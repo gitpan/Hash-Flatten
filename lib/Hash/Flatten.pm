@@ -2,7 +2,7 @@
 # Purpose : Flatten/Unflatten nested data structures to/from key-value form
 # Author  : John Alden
 # Created : Feb 2002
-# CVS     : $Id: Flatten.pm,v 1.16 2006/04/10 08:47:03 mattheww Exp $
+# CVS     : $Id: Flatten.pm,v 1.19 2009/05/09 12:42:02 jamiel Exp $
 ###############################################################################
 
 package Hash::Flatten;
@@ -15,7 +15,7 @@ use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS $VERSION);
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(flatten unflatten);
 %EXPORT_TAGS = ('all' => \@EXPORT_OK);
-$VERSION = ('$Revision: 1.16 $' =~ /([\d\.]+)/)[0];
+$VERSION = ('$Revision: 1.19 $' =~ /([\d\.]+)/)[0];
 
 use constant DEFAULT_HASH_DELIM => '.';
 use constant DEFAULT_ARRAY_DELIM => ':';
@@ -37,6 +37,7 @@ sub new
 	$self->{HashDelimiter} ||= DEFAULT_HASH_DELIM;
 	$self->{ArrayDelimiter} ||= DEFAULT_ARRAY_DELIM;
 	$self->{EscapeSequence} = "\\" unless(defined $self->{EscapeSequence} && length($self->{EscapeSequence}) > 0);
+	$self->{EscapeSequence} = undef if($self->{DisableEscapes});
 	
 	#Sanity check: delimiters don't contain escape sequence
 	croak("Hash delimiter cannot contain escape sequence") if($self->{HashDelimiter} =~ /\Q$self->{EscapeSequence}\E/);
@@ -93,7 +94,7 @@ sub unflatten
 		my $value = $hashref->{$key};
 		my @levels = split(/$regexp/, $key);
 		
-		my $finalkey = $self->_unescape(pop(@levels), $self->{EscapeSequence});
+		my $finalkey = $self->_unescape((scalar(@levels) % 2 ? pop(@levels) : ''), $self->{EscapeSequence});
 		my $ptr = \%expanded;
 		while (@levels >= 2)
 		{
@@ -210,7 +211,7 @@ sub _flatten_hash_level
 		TRACE("_flatten_hash_level: flattening: $k");
 		my $v = $hashref->{$k};
 		$k = $self->_escape($k, $self->{EscapeSequence}, [values %$delim]);
-		my $flatkey = ($prefix? $prefix.$delim->{'HASH'}.$k : $k);		
+		my $flatkey = (defined($prefix) ? $prefix.$delim->{'HASH'}.$k : $k);
 		push @flat, $self->_flatten($flatkey, $v, $delim);
 	}
 	return @flat;
@@ -228,7 +229,7 @@ sub _flatten_array_level
 	my @flat;
 	foreach my $ind (0 .. $#$arrayref)
 	{
-		my $flatkey = ($prefix? $prefix.$delim->{'ARRAY'}.$ind : $ind);
+		my $flatkey = (defined($prefix) ? $prefix.$delim->{'ARRAY'}.$ind : $ind);
 		my $v = $arrayref->[$ind];
 		push @flat, $self->_flatten($flatkey, $v, $delim);
 	}
@@ -413,9 +414,15 @@ By default references to references, and references to scalars, are followed sil
 =item EscapeSequence
 
 This is the character or sequence of characters that will be used to escape the hash and array delimiters.
-If this is set to undef, no escaping will be done.  The default escape sequence is a backslash.
-The escaping strategy is to place the escape sequence in front of delimiter sequences; the escape
-sequence itself is escaped by replacing it with two instances.
+The default escape sequence is '\\'. The escaping strategy is to place the escape sequence in front of 
+delimiter sequences; the escape sequence itself is escaped by replacing it with two instances.
+
+=item DisableEscapes
+
+Stop the escaping from happening.  No escape sequences will be added to flattened output, nor interpreted on the way back.
+
+B<WARNING:> If your structure has keys that contain the delimiter characters, it will not be possible to unflatten the 
+structure correctly.
 
 =back
 
@@ -429,10 +436,6 @@ C<'foo' =E<gt> \\\\\\$foo>
 will be collapsed to
 C<'foo' =E<gt> $foo>.
 You can override this behaviour using the OnRefScalar and OnRefRef constructor option.
-
-If you set EscapeSequence to undef, unflatten() will produce incorrect results
-if your hash keys contain the delimiter strings, and your hash key will be split up.
-Either set the delimiter strings appropriately to allow for this, or define an EscapeSequence.
 
 Recursive structures are detected and cause a fatal error.
 
@@ -459,7 +462,7 @@ This also provides a tie interface but reduces a nested structure to key-value f
 
 =head1 VERSION
 
-$Id: Flatten.pm,v 1.16 2006/04/10 08:47:03 mattheww Exp $
+$Id: Flatten.pm,v 1.19 2009/05/09 12:42:02 jamiel Exp $
 
 =head1 AUTHOR
 

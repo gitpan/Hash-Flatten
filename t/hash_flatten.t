@@ -4,7 +4,7 @@
 # Purpose : Unit test for Hash::Flatten
 # Author  : John Alden
 # Created : Feb 2002
-# CVS     : $Header: /home/cvs/software/cvsroot/hash_flatten/t/hash_flatten.t,v 1.19 2006/04/11 13:43:30 mattheww Exp $
+# CVS     : $Header: /home/cvs/software/cvsroot/hash_flatten/t/hash_flatten.t,v 1.21 2009/05/09 12:42:02 jamiel Exp $
 ###############################################################################
 # -t : trace
 # -T : deep trace into modules
@@ -68,6 +68,47 @@ ASSERT EQUAL($flat, $flat_data), 'nested hashes';
 my $unflat = Hash::Flatten::unflatten($flat);
 DUMP($unflat);
 ASSERT EQUAL($unflat, $data), 'nested hashes unflattened';
+
+#############################################################
+#
+# Nested hashes with weird values
+#
+#############################################################
+
+my $data =
+{
+	'x' => 1,
+	'0' => {
+		'1' => 2,
+		'' => {
+			'' => 3,
+			'q' => 4
+		},
+	},
+	'a' => [1,2,3],
+	'' => [4,5,6],
+};
+
+my $flat_data = {
+	'x' => 1,
+	'0.1' => 2,
+	'0..' => 3,
+	'0..q' => 4,
+	'a:0' => 1,
+	'a:1' => 2,
+	'a:2' => 3,
+	':0' => 4,
+	':1' => 5,
+	':2' => 6,
+};
+
+my $flat = Hash::Flatten::flatten($data);
+DUMP($flat);
+ASSERT EQUAL($flat, $flat_data), 'nested hashes with weird values';
+
+my $unflat = Hash::Flatten::unflatten($flat);
+DUMP($unflat);
+ASSERT EQUAL($unflat, $data), 'nested hashes with weird values unflattened';
 
 #############################################################
 #
@@ -430,7 +471,29 @@ ASSERT(scalar $buf =~ /is a REF and will be followed/ && EQUAL($rv, {
 	'a:1' => 2
 }), "warn mode works as expected");
 
-# check to ensure passing an undefined escape sequence doesn't die!
-my $escape_seq;
-my $o = Hash::Flatten->new({EscapeSequence => $escape_seq});
-ASSERT($o,"setting an undefined escape sequence didn't cause an error.");
+$rv = Hash::Flatten::flatten({a=>"m:o.o", "o:i.n:k" => {a=>1}},{EscapeSequence => "#", DisableEscapes => 0});
+DUMP($rv);
+ASSERT(
+	EQUAL($rv,{a => 'm:o.o','o#:i#.n#:k.a' => 1}),
+	"Escapes on, returned escaped hash"
+);    
+$rv = Hash::Flatten::unflatten({a => 'm:o.o','o#:i#.n#:k.a' => 1},{EscapeSequence => "#", DisableEscapes => 0});
+DUMP($rv);
+ASSERT(
+	EQUAL($rv,{a=>"m:o.o", "o:i.n:k" => {a=>1}}),
+	"Escapes on, unescaped hash correctly"
+);    
+
+$rv = Hash::Flatten::flatten({a=>"m:o.o", "o:i.n:k" => {a=>1}},{EscapeSequence => "#", DisableEscapes => 1});
+DUMP($rv);
+ASSERT(
+	EQUAL($rv,{a => 'm:o.o','o:i.n:k.a' => 1}),
+	"Escapes off, returned nonsense"
+);    
+$rv = Hash::Flatten::unflatten({a => 'm:o.o','o#:i#.n#:k.a' => 1},{EscapeSequence => "#", DisableEscapes => 1});
+DUMP($rv);
+ASSERT(
+	EQUAL($rv,{a => 'm:o.o','o#' => [{'n#' => [{a => 1}]}]}),
+	"Escapes off, didn't unescape hash"
+);    
+
